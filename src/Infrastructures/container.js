@@ -1,0 +1,237 @@
+/* istanbul ignore file */
+
+import { createContainer } from 'instances-container';
+
+// external agency
+import { nanoid } from 'nanoid';
+import bcrypt from 'bcrypt';
+import pool from './database/postgres/pool.js';
+import jwt from 'jsonwebtoken';
+
+// service (repository, helper, manager, etc)
+import UserRepository from '../Domains/users/UserRepository.js';
+import PasswordHash from '../Applications/security/PasswordHash.js';
+import UserRepositoryPostgres from './repository/UserRepositoryPostgres.js';
+import BcryptPasswordHash from './security/BcryptPasswordHash.js';
+import ThreadRepository from '../Domains/threads/ThreadRepository.js';
+import ThreadRepositoryPostgres from './repository/ThreadRepositoryPostgres.js';
+import KomentarRepository from '../Domains/komentar/KomentarRepository.js';
+import KomentarRepositoryPostgres from './repository/KomentarRepositoryPostgres.js';
+
+// use case
+import AddUserUseCase from '../Applications/use_case/AddUserUseCase.js';
+import AuthenticationTokenManager from '../Applications/security/AuthenticationTokenManager.js';
+import JwtTokenManager from './security/JwtTokenManager.js';
+import LoginUserUseCase from '../Applications/use_case/LoginUserUseCase.js';
+import AuthenticationRepository from '../Domains/authentications/AuthenticationRepository.js';
+import AuthenticationRepositoryPostgres from './repository/AuthenticationRepositoryPostgres.js';
+import LogoutUserUseCase from '../Applications/use_case/LogoutUserUseCase.js';
+import RefreshAuthenticationUseCase from '../Applications/use_case/RefreshAuthenticationUseCase.js';
+import TambahThreadUseCase from '../Applications/use_case/TambahThreadUseCase.js';
+import TambahKomentarUseCase from '../Applications/use_case/TambahKomentarUseCase.js';
+import HapusKomentarUseCase from '../Applications/use_case/HapusKomentarUseCase.js';
+import LihatDetailThreadUseCase from '../Applications/use_case/LihatDetailThreadUseCase.js';
+
+// creating container
+const container = createContainer();
+
+// registering services and repository
+container.register([
+  {
+    key: UserRepository.name,
+    Class: UserRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        {
+          concrete: pool,
+        },
+        {
+          concrete: nanoid,
+        },
+      ],
+    },
+  },
+  {
+    key: AuthenticationRepository.name,
+    Class: AuthenticationRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        {
+          concrete: pool,
+        },
+      ],
+    },
+  },
+  {
+    key: PasswordHash.name,
+    Class: BcryptPasswordHash,
+    parameter: {
+      dependencies: [
+        {
+          concrete: bcrypt,
+        },
+      ],
+    },
+  },
+  {
+    key: AuthenticationTokenManager.name,
+    Class: JwtTokenManager,
+    parameter: {
+      dependencies: [
+        {
+          concrete: jwt
+        }
+      ],
+    },
+  },
+  {
+    key: ThreadRepository.name,
+    Class: ThreadRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        { concrete: pool },
+        { concrete: nanoid },
+      ],
+    },
+  },
+  {
+    key: KomentarRepository.name,
+    Class: KomentarRepositoryPostgres,
+    parameter: {
+      dependencies: [
+        { concrete: pool },
+        { concrete: nanoid },
+      ],
+    },
+  },
+]);
+
+// registering use cases
+container.register([
+  {
+    key: AddUserUseCase.name,
+    Class: AddUserUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'userRepository',
+          internal: UserRepository.name,
+        },
+        {
+          name: 'passwordHash',
+          internal: PasswordHash.name,
+        },
+      ],
+    },
+  },
+  {
+    key: LoginUserUseCase.name,
+    Class: LoginUserUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'userRepository',
+          internal: UserRepository.name,
+        },
+        {
+          name: 'authenticationRepository',
+          internal: AuthenticationRepository.name,
+        },
+        {
+          name: 'authenticationTokenManager',
+          internal: AuthenticationTokenManager.name,
+        },
+        {
+          name: 'passwordHash',
+          internal: PasswordHash.name,
+        },
+      ],
+    },
+  },
+  {
+    key: LogoutUserUseCase.name,
+    Class: LogoutUserUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'authenticationRepository',
+          internal: AuthenticationRepository.name,
+        },
+      ],
+    },
+  },
+  {
+    key: RefreshAuthenticationUseCase.name,
+    Class: RefreshAuthenticationUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'authenticationRepository',
+          internal: AuthenticationRepository.name,
+        },
+        {
+          name: 'authenticationTokenManager',
+          internal: AuthenticationTokenManager.name,
+        },
+      ],
+    },
+  },
+  {
+    key: TambahThreadUseCase.name,
+    Class: TambahThreadUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'threadRepository',
+          internal: ThreadRepository.name,
+        },
+      ],
+    },
+  },
+  {
+    key: TambahKomentarUseCase.name,
+    Class: TambahKomentarUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'komentarRepository',
+          internal: KomentarRepository.name,
+        },
+        {
+          name: 'threadRepository',
+          internal: ThreadRepository.name,
+        },
+      ],
+    },
+  },
+  {
+    key: HapusKomentarUseCase.name,
+    Class: HapusKomentarUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        { name: 'komentarRepository', internal: KomentarRepository.name },
+        { name: 'threadRepository', internal: ThreadRepository.name },
+      ],
+    },
+  },
+  {
+    key: LihatDetailThreadUseCase.name,
+    Class: LihatDetailThreadUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        { name: 'threadRepository', internal: ThreadRepository.name },
+        { name: 'komentarRepository', internal: KomentarRepository.name },
+      ],
+    },
+  },
+]);
+
+export default container;
